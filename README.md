@@ -16,4 +16,5 @@ sleep 5
 chain.reload
 puts chain.packets
 puts chain.bytes
+chain.delete
 ```
