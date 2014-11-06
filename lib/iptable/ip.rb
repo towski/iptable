@@ -42,10 +42,12 @@ module IP
 
   class Chain
     attr_reader :rules, :name
+    attr_accessor :reference
 
     def initialize(options)
       @name = options[:name]
       @rules = []
+      @reference = nil
     end
 
     def save
@@ -55,6 +57,13 @@ module IP
         else
           return true
         end
+      end
+    end
+
+    def append_jump_to chain
+      chain.reference = self
+      IO.popen("/sbin/iptables -I #{@name} -j #{chain.name}") do |output|
+        puts output
       end
     end
 
@@ -77,6 +86,11 @@ module IP
     def delete
       @rules.each do |rule|
         IO.popen("/sbin/iptables -D #{@name} 1") do |output|
+          puts output.inspect
+        end
+      end
+      if @reference
+        IO.popen("/sbin/iptables -D #{@reference.name} -j #{@name}") do |output|
           puts output.inspect
         end
       end

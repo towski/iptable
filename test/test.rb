@@ -27,6 +27,7 @@ class Tests < Minitest::Test
   def test_add_chain
     table = IP::Table.new
     chain = table.add_chain :name => "nginx_in"
+    table.chains["INPUT"].append_jump_to chain
     rule = chain.add_rule :protocol => :tcp, :dport => 2000
     server_thread = Thread.new do
       server = TCPServer.new 2000
@@ -40,7 +41,7 @@ class Tests < Minitest::Test
     client_thread.join
     server_thread.join
     chain.reload
-    assert_equal 0, chain.rules.first.packets
+    assert_equal 4, chain.rules.first.packets
     ensure
     chain.delete
   end
