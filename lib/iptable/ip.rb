@@ -63,7 +63,7 @@ module IP
     def append_jump_to chain
       chain.reference = self
       IO.popen("/sbin/iptables -I #{@name} -j #{chain.name}") do |output|
-        puts output
+        puts output.read
       end
     end
 
@@ -86,16 +86,15 @@ module IP
     def delete
       @rules.each do |rule|
         IO.popen("/sbin/iptables -D #{@name} 1") do |output|
-          puts output.inspect
+          puts output.read
         end
       end
       if @reference
         IO.popen("/sbin/iptables -D #{@reference.name} -j #{@name}") do |output|
-          puts output.inspect
+          puts output.read
         end
       end
       IO.popen("/sbin/iptables -X #{@name}") do |output|
-        puts "DELETE?\n"
         puts output.read
       end
     end
@@ -123,7 +122,7 @@ module IP
 
     def save
       IO.popen("/sbin/iptables -A #{@chain.name} -p tcp --dport 2000") do |output|
-        puts output
+        puts output.read
       end
     end
   end
