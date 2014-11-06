@@ -24,10 +24,16 @@ module IP
       end
     end
 
+    def add_chain(options)
+      new_chain = Chain.new(options)
+      new_chain.save
+      @chains[options[:name]] = new_chain
+    end
+
     def match_chain(line)
       if match = line.match(CHAIN_RE)
         name = match[1]
-        @current_chain = @chains[name] = Chain.new(name)
+        @current_chain = @chains[name] = Chain.new(:name => name)
         return true
       end
       false
@@ -35,30 +41,76 @@ module IP
   end
 
   class Chain
-    attr_reader :rules
+    attr_reader :rules, :name
 
-    def initialize(name)
-      @name = name
+    def initialize(options)
+      @name = options[:name]
       @rules = []
     end
 
-    def add_rule(*args)
-      @rules << Rule.new(args)
+    def save
+      IO.popen("/sbin/iptables -N #{@name}") do |output|
+        if output.read =~ /Chain already exists/
+          return false
+        else
+          return true
+        end
+      end
+    end
+
+    def init_rule(options)
+      @rules << Rule.new(options.merge(:chain => self))
+    end
+
+    def add_rule(options)
+      new_rule = Rule.new(options.merge(:chain => self))
+      new_rule.save
+      @rules << new_rule
     end
 
     def match_rule(string)
       if match = string.match(RULE_RE)
-        add_rule match[1, -1]
+        init_rule :packets => match[1], :protocol => match[2]
+      end
+    end
+
+    def delete
+      @rules.each do |rule|
+        IO.popen("/sbin/iptables -D #{@name} 1") do |output|
+          puts output.inspect
+        end
+      end
+      IO.popen("/sbin/iptables -X #{@name}") do |output|
+        puts "DELETE?\n"
+        puts output.read
+      end
+    end
+
+    def reload
+      @rules = []
+      IO.popen("/sbin/iptables -L #{@name} -n -v -x") do |output|
+        output.readlines.each do |line|
+          match_rule(line)
+        end
       end
     end
   end
 
   class Rule
     attr_accessor :chain, :target
+    attr_reader :packets
 
-    def initialize(*args)
-      @chain = nil
+    def initialize(options)
+      @chain = options[:chain]
+      raise "Rule needs a chain" unless @chain
+      @packets = options[:packets].to_i
       @target = nil
+    end
+
+    def save
+      IO.popen("/sbin/iptables -A #{@chain.name} -p tcp --dport 2000") do |output|
+        puts output
+      end
     end
   end
 end
