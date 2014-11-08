@@ -35,8 +35,8 @@ class Tests < Minitest::Test
       sleep 0.1
     end
     client_thread = Thread.new do
-      client = TCPSocket.new 'localhost', 1999
       sleep 0.1
+      client = TCPSocket.new 'localhost', 1999
       client.puts "hey"
     end
     client_thread.join
@@ -56,9 +56,11 @@ class Tests < Minitest::Test
       server = UDPSocket.new
       server.bind "localhost", 1998
       text, sender = server.recvfrom(1)
+      sleep 0.1
     end
     client_thread = Thread.new do
       client = UDPSocket.new
+      sleep 0.1
       client.send("hello", 0, 'localhost', 1998)
     end
     client_thread.join
