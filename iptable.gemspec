@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'iptable'
-  s.version     = '0.0.1'
+  s.version     = '0.0.2'
   s.date        = '2014-11-05'
   s.summary     = "IP Table"
   s.description = "manipulate iptables"

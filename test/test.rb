@@ -24,24 +24,47 @@ class Tests < Minitest::Test
     assert table.match_chain "Chain TRAFFIC_ACCT (0 references)"
   end
 
-  def test_add_chain
+  def test_add_chain_tcp
     table = IP::Table.new
     chain = table.add_chain :name => "nginx_in"
     table.chains["INPUT"].append_jump_to chain
-    rule = chain.add_rule :protocol => :tcp, :dport => 2000
+    rule = chain.add_rule :protocol => :tcp, :dport => 1999
     server_thread = Thread.new do
-      server = TCPServer.new 2000
+      server = TCPServer.new 1999
       server.accept
-      puts "accept"
+      sleep 0.1
     end
     client_thread = Thread.new do
-      client = TCPSocket.new 'localhost', 2000
+      client = TCPSocket.new 'localhost', 1999
+      sleep 0.1
       client.puts "hey"
     end
     client_thread.join
     server_thread.join
     chain.reload
     assert_equal 4, chain.rules.first.packets
+    ensure
+    chain.delete
+  end
+
+  def test_add_chain_udp
+    table = IP::Table.new
+    chain = table.add_chain :name => "nginx_in"
+    table.chains["INPUT"].append_jump_to chain
+    rule = chain.add_rule :protocol => :udp, :dport => 1998
+    server_thread = Thread.new do
+      server = UDPSocket.new
+      server.bind "localhost", 1998
+      text, sender = server.recvfrom(1)
+    end
+    client_thread = Thread.new do
+      client = UDPSocket.new
+      client.send("hello", 0, 'localhost', 1998)
+    end
+    client_thread.join
+    server_thread.join
+    chain.reload
+    assert_equal 1, chain.rules.first.packets
     ensure
     chain.delete
   end

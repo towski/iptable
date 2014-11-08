@@ -118,10 +118,12 @@ module IP
       raise "Rule needs a chain" unless @chain
       @packets = options[:packets].to_i
       @target = nil
+      @dport = options[:dport]
+      @protocol = options[:protocol] || "all"
     end
 
     def save
-      IO.popen("/sbin/iptables -A #{@chain.name} -p tcp --dport 2000") do |output|
+      IO.popen("/sbin/iptables -A #{@chain.name} -p #{@protocol} --dport #{@dport}") do |output|
         puts output.read
       end
     end
